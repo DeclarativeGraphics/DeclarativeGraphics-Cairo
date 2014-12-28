@@ -34,3 +34,22 @@ fromEnvelope env@(Envelope l t r b) = Shape {
   sEnvelope = env,
   sPrims = [Prim.Rectangle l t (r-l) (b-t)]
 }
+
+
+data Path = Path {
+  pathStart :: (Double,Double),
+  pathPrim  :: [Prim.PathOp]
+}
+
+pathToPrim (Path (x,y) path) = Prim.Path (Prim.MoveTo x y : path)
+pathToShape path = Shape emptyEnvelope [pathToPrim path]
+
+pathPoint point = Path point []
+
+connectBy connector (Path start0 prim0) (Path start1 prim1)
+  = Path start0 (prim0 ++ [connection] ++ prim1)
+  where
+    connection = uncurry connector start1
+
+lineConnect = connectBy Prim.LineTo
+curveConnect (x1,y1) (x2,y2) = connectBy (Prim.CurveTo x1 y1 x2 y2)
