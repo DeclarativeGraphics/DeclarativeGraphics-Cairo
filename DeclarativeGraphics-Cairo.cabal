@@ -17,7 +17,6 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Graphics.Declarative.Backend.Cairo, Graphics.Declarative.Shape
-  other-modules:       Graphics.Declarative.Internal.Primitive
   -- other-extensions:
   build-depends:       base, cairo, pango, DeclarativeGraphics
   -- hs-source-dirs:

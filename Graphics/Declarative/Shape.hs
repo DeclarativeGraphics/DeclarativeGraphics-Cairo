@@ -1,55 +1,56 @@
 module Graphics.Declarative.Shape where
 
-import qualified Graphics.Declarative.Internal.Primitive as Prim
-import Graphics.Declarative.Envelope
+import qualified Graphics.Rendering.Cairo as Cairo
 
-data Shape = Shape {
-  sEnvelope :: Envelope,
-  sPrims :: [Prim.Primitive]
-} deriving (Show, Eq)
+import Graphics.Declarative.Frame
+import Graphics.Declarative.Framed
 
-circle :: Double -> Shape
-circle radius = Shape {
-  sEnvelope = envelopeCenteredCircle radius,
-  sPrims = [Prim.Arc 0 0 radius 0 (2 * pi)]
-}
+newtype Shape = Shape (Cairo.Render ())
 
-rectangle :: Double -> Double -> Shape
-rectangle width height = Shape {
-  sEnvelope = envelopeCenteredRect width height,
-  sPrims = [Prim.Rectangle (-width/2) (-height/2) width height]
-}
+renderShape :: Shape -> Cairo.Render ()
+renderShape (Shape renderer) = renderer
 
-empty :: Shape
-empty = blankCentered 0 0
+circle :: Double -> Framed Shape
+circle radius = framed (0.5,0.5) (2*radius) (2*radius) shape
+  where shape = Shape $ Cairo.arc 0 0 radius 0 (2*pi)
 
-blankCentered :: Double -> Double -> Shape
-blankCentered w h = onlyEnvelope $ Envelope (-w/2) (-h/2) (w/2) (h/2)
+rectangle :: Double -> Double -> Framed Shape
+rectangle width height = framed (0.5,0.5) width height shape
+  where shape = Shape $ Cairo.rectangle (-width/2) (-height/2) width height
 
-onlyEnvelope :: Envelope -> Shape
-onlyEnvelope env = Shape env []
 
-fromEnvelope :: Envelope -> Shape
-fromEnvelope env@(Envelope l t r b) = Shape {
-  sEnvelope = env,
-  sPrims = [Prim.Rectangle l t (r-l) (b-t)]
-}
+empty :: Framed Shape
+empty = gap 0 0
+
+gap :: Double -> Double -> Framed Shape
+gap w h = framed (0.5,0.5) w h (Shape (return ()))
+
+fromFrame :: Frame -> Framed Shape
+fromFrame frame@(Frame l t r b) = Framed frame shape
+  where shape = Shape $ Cairo.rectangle l t (r-l) (b-t)
 
 
 data Path = Path {
-  pathStart :: (Double,Double),
-  pathPrim  :: [Prim.PathOp]
+  pathStart    :: (Double,Double),
+  pathRenderer :: Cairo.Render ()
 }
 
-pathToPrim (Path (x,y) path) = Prim.Path (Prim.MoveTo x y : path)
-pathToShape path = Shape emptyEnvelope [pathToPrim path]
+pathToShape :: Path -> Framed Shape
+pathToShape = noFrame . Shape . pathRenderer
 
-pathPoint point = Path point []
+pathPoint :: (Double,Double) -> Path
+pathPoint point = Path point (return ())
 
+connectBy :: (Double -> Double -> Cairo.Render ())
+          -> Path -> Path -> Path
 connectBy connector (Path start0 prim0) (Path start1 prim1)
-  = Path start0 (prim0 ++ [connection] ++ prim1)
+  = Path start0 (prim0 >> connection >> prim1)
   where
     connection = uncurry connector start1
 
-lineConnect = connectBy Prim.LineTo
-curveConnect (x1,y1) (x2,y2) = connectBy (Prim.CurveTo x1 y1 x2 y2)
+lineConnect :: Path -> Path -> Path
+lineConnect = connectBy Cairo.lineTo
+
+curveConnect :: (Double,Double) -> (Double,Double)
+             -> Path -> Path -> Path
+curveConnect (x1,y1) (x2,y2) = connectBy (Cairo.curveTo x1 y1 x2 y2)
