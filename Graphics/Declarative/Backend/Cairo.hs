@@ -7,13 +7,13 @@ import Graphics.Rendering.Pango hiding (Color, Font)
 import qualified Graphics.Rendering.Cairo as Cairo
 
 import Graphics.Declarative.Graphic as Graphic
-import Graphics.Declarative.Framed as Framed
-import Graphics.Declarative.Frame as Frame
+import Graphics.Declarative.Bordered as Bordered
+import qualified Graphics.Declarative.Border as Border
 import Graphics.Declarative.Shape as Shape
 
 type RGB = (Double, Double, Double)
 
-type Form = Framed (Graphic (Cairo.Render()))
+type Form = Bordered (Graphic (Cairo.Render()))
 
 data LineCap = Flat | Round | Padded deriving (Show, Eq)
 data LineJoin = Clipped | Smooth | Sharp deriving (Show, Eq)
@@ -55,15 +55,15 @@ defaultTextStyle = TextStyle {
 }
 
 drawForm :: Form -> Cairo.Render ()
-drawForm = renderGraphic move (flip (>>)) . unframe
+drawForm = renderGraphic move (flip (>>)) . unborder
   where move offset graphic = do
           Cairo.save
           uncurry Cairo.translate offset
           graphic
           Cairo.restore
 
-filled :: RGB -> Framed Shape -> Form
-filled (r, g, b) = Framed.map fillShape
+filled :: RGB -> Bordered Shape -> Form
+filled (r, g, b) = Bordered.map fillShape
   where fillShape shape = primitive $ do
           Cairo.save
           Cairo.setSourceRGB r g b
@@ -71,8 +71,8 @@ filled (r, g, b) = Framed.map fillShape
           Cairo.fill
           Cairo.restore
 
-outlined :: LineStyle -> Framed Shape -> Form
-outlined style = Framed.map outlineShape
+outlined :: LineStyle -> Bordered Shape -> Form
+outlined style = Bordered.map outlineShape
   where outlineShape shape = primitive $ do
           Cairo.save
           applyLineStyle style
@@ -104,7 +104,7 @@ convertLineJoin Smooth  = Cairo.LineJoinRound
 convertLineJoin Sharp   = Cairo.LineJoinMiter
 
 text :: TextStyle -> String -> Form
-text style content = Framed (Frame 0 0 width height) $ Graphic.primitive $ do
+text style content = Bordered (Border.fromFrame (0, 0, width, height)) $ Graphic.primitive $ do
   Cairo.save
   Cairo.setSourceRGB r g b
   showLayout pLayout
@@ -133,20 +133,26 @@ text style content = Framed (Frame 0 0 width height) $ Graphic.primitive $ do
         layoutText pContext content
 
 debugFrame :: Form -> Form
-debugFrame graphic =
-  collapseFrame (outlined (solid (1, 0, 0)) $ circle 2)
-  `Framed.atop`
-  outlined (solid (1, 0, 0)) (fromFrame $ getFrame graphic)
-  `Framed.atop`
-  graphic
+debugFrame graphic
+  = collapseBorder (outlined (solid (1, 0, 0)) $ circle 2)
+    `Bordered.atop`
+    outlined (solid (1, 0, 0)) (fromFrame (left, top, right, bottom))
+    `Bordered.atop`
+    graphic
+  where
+    left = Border.leftBorderOffset $ getBorder graphic
+    right = Border.rightBorderOffset $ getBorder graphic
+    top = Border.topBorderOffset $ getBorder graphic
+    bottom = Border.bottomBorderOffset $ getBorder graphic
 
 debugWithSize :: Form -> Form
 debugWithSize graphic =
-  collapseFrame (Framed.move (left, bottom) $ text monoStyle $ "width : " ++ show w ++ "\nheight: " ++ show h)
-  `Framed.atop`
+  collapseBorder (Bordered.move (left, bottom) $ text monoStyle $ "width : " ++ show w ++ "\nheight: " ++ show h)
+  `Bordered.atop`
   debugFrame graphic
   where
-    (Frame left _ _ bottom) = getFrame graphic
+    left = Border.leftBorderOffset $ getBorder graphic
+    bottom = Border.bottomBorderOffset $ getBorder graphic
     w = graphicWidth graphic
     h = graphicHeight graphic
     monoStyle = defaultTextStyle { fontFamily = "Monospace", fontSize = 8 }

@@ -2,31 +2,31 @@ module Graphics.Declarative.Shape where
 
 import qualified Graphics.Rendering.Cairo as Cairo
 
-import Graphics.Declarative.Frame
-import Graphics.Declarative.Framed
+import Graphics.Declarative.Border as Border
+import Graphics.Declarative.Bordered
 
 newtype Shape = Shape (Cairo.Render ())
 
 renderShape :: Shape -> Cairo.Render ()
 renderShape (Shape renderer) = renderer
 
-circle :: Double -> Framed Shape
-circle radius = framed (0.5,0.5) (2*radius) (2*radius) shape
+circle :: Double -> Bordered Shape
+circle radius = Bordered (Border.circular radius) shape
   where shape = Shape $ Cairo.arc 0 0 radius 0 (2*pi)
 
-rectangle :: Double -> Double -> Framed Shape
-rectangle width height = framed (0.5,0.5) width height shape
+rectangle :: Double -> Double -> Bordered Shape
+rectangle width height = bordered (0.5,0.5) width height shape
   where shape = Shape $ Cairo.rectangle (-width/2) (-height/2) width height
 
 
-empty :: Framed Shape
+empty :: Bordered Shape
 empty = gap 0 0
 
-gap :: Double -> Double -> Framed Shape
-gap w h = framed (0.5,0.5) w h (Shape (return ()))
+gap :: Double -> Double -> Bordered Shape
+gap w h = bordered (0.5,0.5) w h (Shape (return ()))
 
-fromFrame :: Frame -> Framed Shape
-fromFrame frame@(Frame l t r b) = Framed frame shape
+fromFrame :: (Double, Double, Double, Double) -> Bordered Shape
+fromFrame frame@(l, t, r, b) = Bordered (Border.fromFrame frame) shape
   where shape = Shape $ Cairo.rectangle l t (r-l) (b-t)
 
 
@@ -35,8 +35,8 @@ data Path = Path {
   pathRenderer :: Cairo.Render ()
 }
 
-pathToShape :: Path -> Framed Shape
-pathToShape = noFrame . Shape . pathRenderer
+pathToShape :: Path -> Bordered Shape
+pathToShape = noBorder . Shape . pathRenderer
 
 pathPoint :: (Double,Double) -> Path
 pathPoint point = Path point (return ())
