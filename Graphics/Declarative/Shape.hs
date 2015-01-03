@@ -5,13 +5,15 @@ import qualified Graphics.Rendering.Cairo as Cairo
 import Graphics.Declarative.Border as Border
 import Graphics.Declarative.Bordered
 
+import Data.Vec2
+
 newtype Shape = Shape (Cairo.Render ())
 
 renderShape :: Shape -> Cairo.Render ()
 renderShape (Shape renderer) = renderer
 
 circle :: Double -> Bordered Shape
-circle radius = Bordered (Border.circular radius) shape
+circle radius = Bordered (Border.circle radius) shape
   where shape = Shape $ Cairo.arc 0 0 radius 0 (2*pi)
 
 rectangle :: Double -> Double -> Bordered Shape
@@ -25,8 +27,8 @@ empty = gap 0 0
 gap :: Double -> Double -> Bordered Shape
 gap w h = bordered (0.5,0.5) w h (Shape (return ()))
 
-fromFrame :: (Double, Double, Double, Double) -> Bordered Shape
-fromFrame frame@(l, t, r, b) = Bordered (Border.fromFrame frame) shape
+fromBoundingBox :: (Vec2, Vec2) -> Bordered Shape
+fromBoundingBox corners@((l, t), (r, b)) = Bordered (Border.fromBoundingBox corners) shape
   where shape = Shape $ Cairo.rectangle l t (r-l) (b-t)
 
 

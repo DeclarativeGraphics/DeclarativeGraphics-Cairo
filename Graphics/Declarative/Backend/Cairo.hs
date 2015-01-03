@@ -3,17 +3,19 @@ module Graphics.Declarative.Backend.Cairo where
 
 import System.IO.Unsafe (unsafePerformIO)
 
-import Graphics.Rendering.Pango hiding (Color, Font)
+import           Graphics.Rendering.Pango hiding (Color, Font)
 import qualified Graphics.Rendering.Cairo as Cairo
 
-import Graphics.Declarative.Graphic as Graphic
-import Graphics.Declarative.Bordered as Bordered
-import qualified Graphics.Declarative.Border as Border
-import Graphics.Declarative.Shape as Shape
+import           Graphics.Declarative.Graphic   as Graphic
+import           Graphics.Declarative.Bordered  as Bordered
+import qualified Graphics.Declarative.Border    as Border
+import           Graphics.Declarative.Shape     as Shape
+
+import Data.Vec2 as Vec2
 
 type RGB = (Double, Double, Double)
 
-type Form = Bordered (Graphic (Cairo.Render()))
+type Form = Bordered (Graphic (Cairo.Render ()))
 
 data LineCap = Flat | Round | Padded deriving (Show, Eq)
 data LineJoin = Clipped | Smooth | Sharp deriving (Show, Eq)
@@ -104,55 +106,62 @@ convertLineJoin Smooth  = Cairo.LineJoinRound
 convertLineJoin Sharp   = Cairo.LineJoinMiter
 
 text :: TextStyle -> String -> Form
-text style content = Bordered (Border.fromFrame (0, 0, width, height)) $ Graphic.primitive $ do
-  Cairo.save
-  Cairo.setSourceRGB r g b
-  showLayout pLayout
-  Cairo.restore
-    where
-      (_, PangoRectangle _ _ width height) = unsafePerformIO $ layoutGetExtents pLayout
-      (r, g, b) = textColor style
-      getFontDescription :: IO FontDescription
-      getFontDescription = do
-        desc <- fontDescriptionNew
-        fontDescriptionSetStyle desc $
-          if italic style then StyleItalic else StyleNormal
-        fontDescriptionSetWeight desc $
-          if bold style then WeightBold else WeightNormal
-        fontDescriptionSetSize desc $ fontSize style
-        fontDescriptionSetFamily desc $ fontFamily style
-        return desc
-      getContext :: FontDescription -> IO PangoContext
-      getContext fontDescription = do
-        context <- cairoCreateContext Nothing
-        contextSetFontDescription context fontDescription
-        return context
-      pLayout :: PangoLayout
-      pLayout = unsafePerformIO $ do
-        pContext <- getContext =<< getFontDescription
-        layoutText pContext content
+text style content = Bordered border $ Graphic.primitive $ do
+                       Cairo.save
+                       Cairo.setSourceRGB r g b
+                       showLayout pLayout
+                       Cairo.restore
+  where
+    border = Border.fromBoundingBox ((0, 0), (width, height))
+    (r, g, b) = textColor style
 
-debugFrame :: Form -> Form
-debugFrame graphic
-  = collapseBorder (outlined (solid (1, 0, 0)) $ circle 2)
+    pLayout :: PangoLayout
+    pLayout = unsafePerformIO $ do
+      pContext <- getContext =<< getFontDescription
+      layoutText pContext content
+    (PangoRectangle _ _ width height)
+      = snd $ unsafePerformIO $ layoutGetExtents pLayout
+
+    getFontDescription :: IO FontDescription
+    getFontDescription = do
+      desc <- fontDescriptionNew
+      fontDescriptionSetStyle desc $
+        if italic style then StyleItalic else StyleNormal
+      fontDescriptionSetWeight desc $
+        if bold style then WeightBold else WeightNormal
+      fontDescriptionSetSize desc $ fontSize style
+      fontDescriptionSetFamily desc $ fontFamily style
+      return desc
+    getContext :: FontDescription -> IO PangoContext
+    getContext fontDescription = do
+      context <- cairoCreateContext Nothing
+      contextSetFontDescription context fontDescription
+      return context
+
+boundingBoxShape :: Form -> Bordered Shape
+boundingBoxShape = fromBoundingBox . Border.getBoundingBox . Bordered.getBorder
+
+debugBoundingBox :: LineStyle -> Form -> Form
+debugBoundingBox linestyle graphic
+  = origincircle
     `Bordered.atop`
-    outlined (solid (1, 0, 0)) (fromFrame (left, top, right, bottom))
+    boundingbox
     `Bordered.atop`
     graphic
   where
-    left = Border.leftBorderOffset $ getBorder graphic
-    right = Border.rightBorderOffset $ getBorder graphic
-    top = Border.topBorderOffset $ getBorder graphic
-    bottom = Border.bottomBorderOffset $ getBorder graphic
+    origincircle = outlined linestyle $ circle 2
+    boundingbox  = outlined linestyle $ boundingBoxShape graphic
 
 debugWithSize :: Form -> Form
-debugWithSize graphic =
-  collapseBorder (Bordered.move (left, bottom) $ text monoStyle $ "width : " ++ show w ++ "\nheight: " ++ show h)
-  `Bordered.atop`
-  debugFrame graphic
+debugWithSize graphic
+  = collapseBorder (Bordered.move (Vec2.add left bottom) debugText)
+    `Bordered.atop`
+    debugBoundingBox (solid (1,0,0)) graphic
   where
-    left = Border.leftBorderOffset $ getBorder graphic
-    bottom = Border.bottomBorderOffset $ getBorder graphic
+    debugText = text monoStyle $ unlines ["width : " ++ show w
+                                         ,"height: " ++ show h]
+    left   = Border.borderOffset (getBorder graphic) Vec2.left
+    bottom = Border.borderOffset (getBorder graphic) Vec2.down
     w = graphicWidth graphic
     h = graphicHeight graphic
     monoStyle = defaultTextStyle { fontFamily = "Monospace", fontSize = 8 }
