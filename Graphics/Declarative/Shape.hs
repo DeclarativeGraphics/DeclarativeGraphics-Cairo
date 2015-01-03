@@ -21,12 +21,6 @@ rectangle width height = bordered (0.5,0.5) width height shape
   where shape = Shape $ Cairo.rectangle (-width/2) (-height/2) width height
 
 
-empty :: Bordered Shape
-empty = gap 0 0
-
-gap :: Double -> Double -> Bordered Shape
-gap w h = bordered (0.5,0.5) w h (Shape (return ()))
-
 fromBoundingBox :: (Vec2, Vec2) -> Bordered Shape
 fromBoundingBox corners@((l, t), (r, b)) = Bordered (Border.fromBoundingBox corners) shape
   where shape = Shape $ Cairo.rectangle l t (r-l) (b-t)

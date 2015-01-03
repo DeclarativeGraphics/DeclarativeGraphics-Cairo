@@ -105,6 +105,12 @@ convertLineJoin Clipped = Cairo.LineJoinBevel
 convertLineJoin Smooth  = Cairo.LineJoinRound
 convertLineJoin Sharp   = Cairo.LineJoinMiter
 
+empty :: Form
+empty = gap 0 0
+
+gap :: Double -> Double -> Form
+gap w h = bordered (0.5,0.5) w h (Graphic.primitive $ return ())
+
 text :: TextStyle -> String -> Form
 text style content = Bordered border $ Graphic.primitive $ do
                        Cairo.save
