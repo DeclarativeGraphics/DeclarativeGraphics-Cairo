@@ -5,7 +5,7 @@ import qualified Graphics.Rendering.Cairo as Cairo
 import Graphics.Declarative.Border as Border
 import Graphics.Declarative.Bordered
 
-import Data.Vec2
+import Data.Vec2 as Vec2
 
 newtype Shape = Shape (Cairo.Render ())
 
@@ -19,6 +19,18 @@ circle radius = Bordered (Border.circle radius) shape
 rectangle :: Double -> Double -> Bordered Shape
 rectangle width height = bordered (0.5,0.5) width height shape
   where shape = Shape $ Cairo.rectangle (-width/2) (-height/2) width height
+
+roundedRectangle :: Double -> Double -> Double -> Bordered Shape
+roundedRectangle width height radius
+  | radius > width/2 || radius > height/2 = roundedRectangle width height $ min (width/2) (height/2)
+  | otherwise = Bordered hull $ Shape render
+  where
+    hull = Border.padded radius $ Border.fromBoundingBox (Vec2.zero, (width-radius, height-radius))
+    render = do
+      Cairo.arc radius         radius          radius (Vec2.degrees 180) (Vec2.degrees 270)
+      Cairo.arc (width-radius) radius          radius (Vec2.degrees 270) (Vec2.degrees 0)
+      Cairo.arc (width-radius) (height-radius) radius (Vec2.degrees 0)   (Vec2.degrees 90)
+      Cairo.arc radius         (height-radius) radius (Vec2.degrees 90)  (Vec2.degrees 180)
 
 
 fromBoundingBox :: (Vec2, Vec2) -> Bordered Shape
