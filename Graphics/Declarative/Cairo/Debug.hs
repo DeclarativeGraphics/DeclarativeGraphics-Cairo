@@ -1,12 +1,10 @@
-module Declarative.Graphics.Cairo.Debug where
+module Graphics.Declarative.Cairo.Debug where
 
-import           Graphics.Rendering.Pango hiding (Color, Font)
-import qualified Graphics.Rendering.Cairo as Cairo
-
-import           Graphics.Declarative.Graphic   as Graphic
 import           Graphics.Declarative.Bordered  as Bordered
 import qualified Graphics.Declarative.Border    as Border
-import           Graphics.Declarative.Shape     as Shape
+
+import           Graphics.Declarative.Cairo.Shape as Shape
+import           Graphics.Declarative.Cairo.Form  as Form
 
 import Data.Vec2 as Vec2
 
@@ -16,7 +14,7 @@ boundingBoxShape = fromBoundingBox . Border.getBoundingBox . Bordered.getBorder
 
 debugBoundingBox :: LineStyle -> Form -> Form
 debugBoundingBox linestyle graphic
-  = Bordered.atopAll [collapseBorder origincircle, collapseBorder boundingbox, graphic]
+  = foldr1 Bordered.atop [collapseBorder origincircle, collapseBorder boundingbox, graphic]
   where
     origincircle = outlined linestyle $ circle 2
     boundingbox  = outlined linestyle $ boundingBoxShape graphic
