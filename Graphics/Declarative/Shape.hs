@@ -31,8 +31,11 @@ data Path = Path {
   pathRenderer :: Cairo.Render ()
 }
 
+renderPath :: Path -> Cairo.Render ()
+renderPath (Path start renderer) = uncurry Cairo.moveTo start >> renderer
+
 pathToShape :: Path -> Bordered Shape
-pathToShape = noBorder . Shape . pathRenderer
+pathToShape = noBorder . Shape . renderPath
 
 pathPoint :: (Double,Double) -> Path
 pathPoint point = Path point (return ())
