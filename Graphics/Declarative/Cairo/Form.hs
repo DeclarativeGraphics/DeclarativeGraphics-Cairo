@@ -6,12 +6,11 @@ import System.IO.Unsafe (unsafePerformIO)
 import           Graphics.Rendering.Pango hiding (Color, Font)
 import qualified Graphics.Rendering.Cairo as Cairo
 
-import           Graphics.Declarative.Graphic   as Graphic
-import           Graphics.Declarative.Bordered  as Bordered
-import qualified Graphics.Declarative.Border    as Border
-import           Graphics.Declarative.Shape     as Shape
+import           Graphics.Declarative.Graphic  as Graphic
+import           Graphics.Declarative.Bordered as Bordered
+import qualified Graphics.Declarative.Border   as Border
 
-import Data.Vec2 as Vec2
+import           Graphics.Declarative.Cairo.Shape as Shape
 
 type RGB = (Double, Double, Double)
 
