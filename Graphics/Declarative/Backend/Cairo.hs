@@ -143,31 +143,3 @@ text style content = Bordered border $ Graphic.primitive $ do
       context <- cairoCreateContext Nothing
       contextSetFontDescription context fontDescription
       return context
-
-boundingBoxShape :: Form -> Bordered Shape
-boundingBoxShape = fromBoundingBox . Border.getBoundingBox . Bordered.getBorder
-
-debugBoundingBox :: LineStyle -> Form -> Form
-debugBoundingBox linestyle graphic
-  = origincircle
-    `Bordered.atop`
-    boundingbox
-    `Bordered.atop`
-    graphic
-  where
-    origincircle = outlined linestyle $ circle 2
-    boundingbox  = outlined linestyle $ boundingBoxShape graphic
-
-debugWithSize :: Form -> Form
-debugWithSize graphic
-  = collapseBorder (Bordered.move (Vec2.add left bottom) debugText)
-    `Bordered.atop`
-    debugBoundingBox (solid (1,0,0)) graphic
-  where
-    debugText = text monoStyle $ unlines ["width : " ++ show w
-                                         ,"height: " ++ show h]
-    left   = Border.borderOffset (getBorder graphic) Vec2.left
-    bottom = Border.borderOffset (getBorder graphic) Vec2.down
-    w = graphicWidth graphic
-    h = graphicHeight graphic
-    monoStyle = defaultTextStyle { fontFamily = "Monospace", fontSize = 8 }
