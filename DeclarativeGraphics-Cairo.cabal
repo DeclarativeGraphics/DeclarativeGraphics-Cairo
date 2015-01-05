@@ -16,8 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Graphics.Declarative.Backend.Cairo, Graphics.Declarative.Shape
-                       Graphics.Declarative.Cairo.Form, Graphics.Declarative.Cairo.Shape,
+  exposed-modules:     Graphics.Declarative.Cairo.Form, Graphics.Declarative.Cairo.Shape,
                        Graphics.Declarative.Cairo.Debug
   -- other-extensions:
   build-depends:       base, cairo, pango, DeclarativeGraphics
