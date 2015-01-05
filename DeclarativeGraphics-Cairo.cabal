@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Graphics.Declarative.Backend.Cairo, Graphics.Declarative.Shape
                        Graphics.Declarative.Cairo.Form, Graphics.Declarative.Cairo.Shape,
-                       Graphics.Declarative.Cairo.Debug
+                       Graphics.Declarative.Cairo.Debug, Graphics.Declarative.Cairo.TangoColors
   -- other-extensions:
   build-depends:       base, cairo, pango, DeclarativeGraphics
   -- hs-source-dirs:
