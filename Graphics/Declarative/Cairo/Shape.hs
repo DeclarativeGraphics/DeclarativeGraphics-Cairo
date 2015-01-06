@@ -25,7 +25,7 @@ roundedRectangle width height radius
   | radius > width/2 || radius > height/2 = roundedRectangle width height $ min (width/2) (height/2)
   | otherwise = Bordered hull $ Shape render
   where
-    hull = Border.padded radius $ Border.fromBoundingBox (Vec2.zero, (width-radius, height-radius))
+    hull = Border.padded radius $ Border.fromBoundingBox ((radius, radius), (width-radius, height-radius))
     render = do
       Cairo.arc radius         radius          radius (Vec2.degrees 180) (Vec2.degrees 270)
       Cairo.arc (width-radius) radius          radius (Vec2.degrees 270) (Vec2.degrees 0)
