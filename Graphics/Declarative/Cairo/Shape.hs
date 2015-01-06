@@ -21,7 +21,7 @@ rectangle width height = bordered (0.5,0.5) width height shape
   where shape = Shape $ Cairo.rectangle (-width/2) (-height/2) width height
 
 roundedRectangle :: Double -> Double -> Double -> Bordered Shape
-roundedRectangle width height radius
+roundedRectangle radius width height
   | radius > width/2 || radius > height/2 = roundedRectangle width height $ min (width/2) (height/2)
   | otherwise = Bordered hull $ Shape render
   where
