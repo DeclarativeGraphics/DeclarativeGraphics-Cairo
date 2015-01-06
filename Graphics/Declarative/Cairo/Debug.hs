@@ -5,6 +5,7 @@ import qualified Graphics.Declarative.Border    as Border
 
 import           Graphics.Declarative.Cairo.Shape as Shape
 import           Graphics.Declarative.Cairo.Form  as Form
+import           Graphics.Declarative.Cairo.TangoColors as Colors
 
 import Data.Vec2 as Vec2
 
@@ -41,11 +42,11 @@ tangentPath size tangentPoint
     toLeft  = Vec2.scale size . Vec2.rotateBy (degrees    90) $ normalVector
     toRight = Vec2.scale size . Vec2.rotateBy (degrees (-90)) $ normalVector
 
-vectorPath :: LineStyle -> Vec2 -> Path
+vectorPath :: Vec2 -> Path
 vectorPath vector = pathPoint (0,0) `lineConnect` pathPoint vector
 
 debugTangent :: Vec2 -> Form -> Form
 debugTangent direction form = tangent `atop` form
   where
-    tangent = outlined (solid red) $ tangentPath 100 borderVector
+    tangent = outlined (solid red) $ noBorder . openPath $ tangentPath 100 borderVector
     borderVector = Border.borderOffset (Bordered.getBorder form) direction
