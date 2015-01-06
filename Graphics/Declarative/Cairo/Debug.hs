@@ -42,7 +42,7 @@ tangentPath size tangentPoint
     toRight = Vec2.scale size . Vec2.rotateBy (degrees (-90)) $ normalVector
 
 vectorPath :: LineStyle -> Vec2 -> Path
-vectorPath linestyle vector = pathPoint (0,0) `lineConnect` pathPoint vector
+vectorPath vector = pathPoint (0,0) `lineConnect` pathPoint vector
 
 debugTangent :: Vec2 -> Form -> Form
 debugTangent direction form = tangent `atop` form
