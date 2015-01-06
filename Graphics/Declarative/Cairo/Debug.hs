@@ -43,3 +43,9 @@ tangentPath size tangentPoint
 
 vectorPath :: LineStyle -> Vec2 -> Path
 vectorPath linestyle vector = pathPoint (0,0) `lineConnect` pathPoint vector
+
+debugTangent :: Vec2 -> Form -> Form
+debugTangent direction form = tangent `atop` form
+  where
+    tangent = outlined (solid red) $ tangentPath 100 borderVector
+    borderVector = Border.borderOffset (Bordered.getBorder form) direction
