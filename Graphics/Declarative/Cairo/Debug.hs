@@ -1,36 +1,75 @@
 module Graphics.Declarative.Cairo.Debug where
 
-import           Graphics.Declarative.Bordered  as Bordered
+import qualified Graphics.Declarative.Bordered  as Bordered  hiding (map)
 import qualified Graphics.Declarative.Border    as Border
+import           Graphics.Declarative.Bordered (Bordered)
+import           Graphics.Declarative.Border   (Border)
 
 import           Graphics.Declarative.Cairo.Shape as Shape
 import           Graphics.Declarative.Cairo.Form  as Form
+import           Graphics.Declarative.Cairo.TangoColors as Colors
 
 import Data.Vec2 as Vec2
 
+data DebuggedForm = Debugged { debugInfo :: Form, debugOriginal :: Form }
+
+debuggedForm :: DebuggedForm -> Form
+debuggedForm (Debugged info original) = info `Bordered.atop` original
+
+noDebug :: Form -> DebuggedForm
+noDebug = Debugged empty
+
+attachDebugInfo :: Form -> DebuggedForm -> DebuggedForm
+attachDebugInfo info = onDebugInfo (Bordered.atop info)
+
+createDebugInfo :: (Form -> Form) -> DebuggedForm -> DebuggedForm
+createDebugInfo createDebugInfo debugform
+  = attachDebugInfo newDebugInfo debugform
+  where
+    newDebugInfo = createDebugInfo (debugOriginal debugform)
+
+onDebugInfo :: (Form -> Form) -> DebuggedForm -> DebuggedForm
+onDebugInfo f (Debugged info original)
+  = Debugged (f info) original
+
+onDebug :: (Form -> Form) -> DebuggedForm -> DebuggedForm
+onDebug f (Debugged info original) = Debugged (f info) (f original)
+
+onDebug2 :: (Form -> Form -> Form)
+         -> (DebuggedForm -> DebuggedForm -> DebuggedForm)
+onDebug2 f (Debugged infoL originalL) (Debugged infoR originalR)
+  = Debugged (f infoL infoR)
+             (f originalL originalR)
+
+atop :: DebuggedForm -> DebuggedForm -> DebuggedForm
+atop = onDebug2 Bordered.atop
 
 boundingBoxShape :: Form -> Bordered Shape
-boundingBoxShape = fromBoundingBox . Border.getBoundingBox . Bordered.getBorder
+boundingBoxShape
+  = Shape.fromBoundingBox . Border.getBoundingBox . Bordered.getBorder
 
-debugBoundingBox :: LineStyle -> Form -> Form
-debugBoundingBox linestyle graphic
-  = foldr1 Bordered.atop [collapseBorder origincircle, collapseBorder boundingbox, graphic]
+createBoundingBox :: LineStyle -> Form -> Form
+createBoundingBox linestyle form = origincircle `Bordered.atop` boundingbox
   where
     origincircle = outlined linestyle $ circle 2
-    boundingbox  = outlined linestyle $ boundingBoxShape graphic
+    boundingbox  = outlined linestyle $ boundingBoxShape form
 
+debugBoundingBox :: LineStyle -> DebuggedForm -> DebuggedForm
+debugBoundingBox linestyle = createDebugInfo (createBoundingBox linestyle)
+
+-- use DebuggedForm instead of Form
 debugWithSize :: Form -> Form
 debugWithSize graphic
-  = collapseBorder (Bordered.move (Vec2.add left bottom) debugText)
+  = Bordered.collapseBorder (Bordered.move (Vec2.add left bottom) debugText)
     `Bordered.atop`
-    debugBoundingBox (solid (1,0,0)) graphic
+    debuggedForm (debugBoundingBox (solid (1,0,0)) (noDebug graphic))
   where
     debugText = text monoStyle $ unlines ["width : " ++ show w
                                          ,"height: " ++ show h]
-    left   = Border.borderOffset (getBorder graphic) Vec2.left
-    bottom = Border.borderOffset (getBorder graphic) Vec2.down
-    w = graphicWidth graphic
-    h = graphicHeight graphic
+    left   = Border.borderOffset (Bordered.getBorder graphic) Vec2.left
+    bottom = Border.borderOffset (Bordered.getBorder graphic) Vec2.down
+    w = Bordered.graphicWidth graphic
+    h = Bordered.graphicHeight graphic
     monoStyle = defaultTextStyle { fontFamily = "Monospace", fontSize = 8 }
 
 tangentPath :: Double -> Vec2 -> Path
@@ -41,5 +80,44 @@ tangentPath size tangentPoint
     toLeft  = Vec2.scale size . Vec2.rotateBy (degrees    90) $ normalVector
     toRight = Vec2.scale size . Vec2.rotateBy (degrees (-90)) $ normalVector
 
-vectorPath :: LineStyle -> Vec2 -> Path
-vectorPath linestyle vector = pathPoint (0,0) `lineConnect` pathPoint vector
+vectorPath :: Vec2 -> Path
+vectorPath vector = pathPoint (0,0) `lineConnect` pathPoint vector
+
+vectorsInCircle :: Double -> [Vec2]
+vectorsInCircle step = map getVector [0,step..2*pi]
+  where
+    getVector dir = Vec2.rotateBy dir Vec2.right
+
+tangentHullPoints :: Double -> Border -> [Vec2]
+tangentHullPoints step border
+  = map (Border.borderOffset border) $ vectorsInCircle step
+
+tangentHullPath :: Double -> Border -> Path
+tangentHullPath step = foldr1 lineConnect . map pathPoint . tangentHullPoints step
+
+createTangent :: Vec2 -> Form -> Form
+createTangent direction form = outlined (solid red) tangentShape
+  where
+    tangentShape = Bordered.noBorder . openPath $ tangentPath 100 borderVector
+    borderVector = Border.borderOffset (Bordered.getBorder form) direction
+
+debugTangent :: Vec2 -> DebuggedForm -> DebuggedForm
+debugTangent direction = createDebugInfo (createTangent direction)
+
+createTangentVector :: Vec2 -> Form -> Form
+createTangentVector direction form = outlined (solid red) tangentVectorShape
+  where
+    tangentVectorShape = Bordered.noBorder . openPath $ vectorPath tangentVector
+    tangentVector      = Border.borderOffset (Bordered.getBorder form) direction
+
+debugTangentVector :: Vec2 -> DebuggedForm -> DebuggedForm
+debugTangentVector direction = createDebugInfo (createTangentVector direction)
+
+createTangentHull :: Double -> Form -> Form
+createTangentHull step form = outlined (solid red) hullshape
+  where
+    hullshape = Bordered.noBorder . closedPath $ hullpath
+    hullpath  = tangentHullPath step (Bordered.getBorder form)
+
+debugTangentHull :: Double -> DebuggedForm -> DebuggedForm
+debugTangentHull step = createDebugInfo (createTangentHull step)
