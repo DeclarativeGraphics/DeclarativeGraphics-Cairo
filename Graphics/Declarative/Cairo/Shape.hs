@@ -31,6 +31,7 @@ roundedRectangle width height radius
       Cairo.arc (width-radius) radius          radius (Vec2.degrees 270) (Vec2.degrees 0)
       Cairo.arc (width-radius) (height-radius) radius (Vec2.degrees 0)   (Vec2.degrees 90)
       Cairo.arc radius         (height-radius) radius (Vec2.degrees 90)  (Vec2.degrees 180)
+      Cairo.closePath
 
 
 fromBoundingBox :: (Vec2, Vec2) -> Bordered Shape
