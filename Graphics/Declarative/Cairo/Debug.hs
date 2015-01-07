@@ -32,6 +32,10 @@ onDebugInfo :: (Form -> Form) -> DebuggedForm -> DebuggedForm
 onDebugInfo f (Debugged info original)
   = Debugged (f info) original
 
+onOriginal :: (Form -> Form) -> DebuggedForm -> DebuggedForm
+onOriginal f (Debugged info original)
+  = Debugged info (f original)
+
 onDebug :: (Form -> Form) -> DebuggedForm -> DebuggedForm
 onDebug f (Debugged info original) = Debugged (f info) (f original)
 
