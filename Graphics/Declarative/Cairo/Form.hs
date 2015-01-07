@@ -55,31 +55,35 @@ defaultTextStyle = TextStyle {
   fontFamily = "Sans"
 }
 
+withSave :: Cairo.Render () -> Cairo.Render ()
+withSave action = Cairo.save >> action >> Cairo.restore
+
 drawForm :: Form -> Cairo.Render ()
-drawForm = renderGraphic move (flip (>>)) . unborder
-  where move offset graphic = do
-          Cairo.save
-          uncurry Cairo.translate offset
-          graphic
-          Cairo.restore
+drawForm = renderGraphic rotate scale move (flip (>>)) . unborder
+  where
+    rotate angle graphic = withSave $ do
+      Cairo.rotate angle
+      graphic
+    scale factors graphic = withSave $ do
+      uncurry Cairo.scale factors
+      graphic
+    move offset graphic = withSave $ do
+      uncurry Cairo.translate offset
+      graphic
 
 filled :: RGB -> Bordered Shape -> Form
 filled (r, g, b) = Bordered.map fillShape
-  where fillShape shape = primitive $ do
-          Cairo.save
+  where fillShape shape = primitive $ withSave $ do
           Cairo.setSourceRGB r g b
           renderShape shape
           Cairo.fill
-          Cairo.restore
 
 outlined :: LineStyle -> Bordered Shape -> Form
 outlined style = Bordered.map outlineShape
-  where outlineShape shape = primitive $ do
-          Cairo.save
+  where outlineShape shape = primitive $ withSave $ do
           applyLineStyle style
           renderShape shape
           Cairo.stroke
-          Cairo.restore
 
 solid :: RGB -> LineStyle
 solid col = defaultLineStyle { color = col }
@@ -111,11 +115,9 @@ gap :: Double -> Double -> Form
 gap w h = bordered (0.5,0.5) w h (Graphic.primitive $ return ())
 
 text :: TextStyle -> String -> Form
-text style content = Bordered border $ Graphic.primitive $ do
-                       Cairo.save
+text style content = Bordered border $ Graphic.primitive $ withSave $ do
                        Cairo.setSourceRGB r g b
                        showLayout pLayout
-                       Cairo.restore
   where
     border = Border.fromBoundingBox ((0, 0), (width, height))
     (r, g, b) = textColor style
