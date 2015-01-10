@@ -17,26 +17,29 @@ circle radius = Bordered (Border.circle radius) shape
   where shape = Shape $ Cairo.arc 0 0 radius 0 (2*pi)
 
 rectangle :: Double -> Double -> Bordered Shape
-rectangle width height = bordered (0.5,0.5) width height shape
-  where shape = Shape $ Cairo.rectangle (-width/2) (-height/2) width height
+rectangle width height = rectangleFromBB ((-width/2, -height/2), (width/2, height/2))
+
+rectangleFromBB :: (Vec2, Vec2) -> Bordered Shape
+rectangleFromBB corners@((l, t), (r, b)) = Bordered (Border.fromBoundingBox corners) shape
+  where shape = Shape $ Cairo.rectangle l t (r-l) (b-t)
 
 roundedRectangle :: Double -> Double -> Double -> Bordered Shape
-roundedRectangle radius width height
-  | radius > width/2 || radius > height/2 = roundedRectangle width height $ min (width/2) (height/2)
+roundedRectangle radius width height = roundedRectangleFromBB radius (Vec2.zero, (width, height))
+
+roundedRectangleFromBB :: Double -> (Vec2, Vec2) -> Bordered Shape
+roundedRectangleFromBB radius boundingBox@((left, up), (right, down))
+  | radius > width/2 || radius > height/2 = roundedRectangleFromBB (min (width/2) (height/2)) boundingBox
   | otherwise = Bordered hull $ Shape render
   where
-    hull = Border.padded radius $ Border.fromBoundingBox ((radius, radius), (width-radius, height-radius))
+    width = right-left
+    height = down-up
+    hull = Border.padded radius $ Border.fromBoundingBox ((left+radius, up+radius), (right-radius, down-radius))
     render = do
-      Cairo.arc radius         radius          radius (Vec2.degrees 180) (Vec2.degrees 270)
-      Cairo.arc (width-radius) radius          radius (Vec2.degrees 270) (Vec2.degrees 0)
-      Cairo.arc (width-radius) (height-radius) radius (Vec2.degrees 0)   (Vec2.degrees 90)
-      Cairo.arc radius         (height-radius) radius (Vec2.degrees 90)  (Vec2.degrees 180)
+      Cairo.arc (left+radius)  (up+radius)   radius (Vec2.degrees 180) (Vec2.degrees 270)
+      Cairo.arc (right-radius) (up+radius)   radius (Vec2.degrees 270) (Vec2.degrees 0)
+      Cairo.arc (right-radius) (down-radius) radius (Vec2.degrees 0)   (Vec2.degrees 90)
+      Cairo.arc (left+radius)  (down-radius) radius (Vec2.degrees 90)  (Vec2.degrees 180)
       Cairo.closePath
-
-
-fromBoundingBox :: (Vec2, Vec2) -> Bordered Shape
-fromBoundingBox corners@((l, t), (r, b)) = Bordered (Border.fromBoundingBox corners) shape
-  where shape = Shape $ Cairo.rectangle l t (r-l) (b-t)
 
 
 data Path = Path {

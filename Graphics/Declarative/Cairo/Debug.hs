@@ -50,7 +50,7 @@ atop = onDebug2 Bordered.atop
 
 boundingBoxShape :: Form -> Bordered Shape
 boundingBoxShape
-  = Shape.fromBoundingBox . Border.getBoundingBox . Bordered.getBorder
+  = Shape.rectangleFromBB . Border.getBoundingBox . Bordered.getBorder
 
 createBoundingBox :: LineStyle -> Form -> Form
 createBoundingBox linestyle form = origincircle `Bordered.atop` boundingbox
