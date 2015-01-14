@@ -33,12 +33,19 @@ roundedRectangleFromBB radius boundingBox@((left, up), (right, down))
   where
     width = right-left
     height = down-up
-    hull = Border.padded radius $ Border.fromBoundingBox ((left+radius, up+radius), (right-radius, down-radius))
+
+    innerLeft = left+radius
+    innerUp = up+radius
+    innerRight = right-radius
+    innerDown = down-radius
+
+    hull = Border.padded radius $ Border.fromBoundingBox ((innerLeft, innerUp), (innerRight, innerDown))
+
     render = do
-      Cairo.arc (left+radius)  (up+radius)   radius (Vec2.degrees 180) (Vec2.degrees 270)
-      Cairo.arc (right-radius) (up+radius)   radius (Vec2.degrees 270) (Vec2.degrees 0)
-      Cairo.arc (right-radius) (down-radius) radius (Vec2.degrees 0)   (Vec2.degrees 90)
-      Cairo.arc (left+radius)  (down-radius) radius (Vec2.degrees 90)  (Vec2.degrees 180)
+      Cairo.arc innerLeft  innerUp   radius (Vec2.degrees 180) (Vec2.degrees 270)
+      Cairo.arc innerRight innerUp   radius (Vec2.degrees 270) (Vec2.degrees 0)
+      Cairo.arc innerRight innerDown radius (Vec2.degrees 0)   (Vec2.degrees 90)
+      Cairo.arc innerLeft  innerDown radius (Vec2.degrees 90)  (Vec2.degrees 180)
       Cairo.closePath
 
 
