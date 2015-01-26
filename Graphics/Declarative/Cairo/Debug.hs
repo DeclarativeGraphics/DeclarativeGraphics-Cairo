@@ -4,23 +4,33 @@ import qualified Graphics.Declarative.Bordered  as Bordered  hiding (map)
 import qualified Graphics.Declarative.Border    as Border
 import           Graphics.Declarative.Bordered (Bordered)
 import           Graphics.Declarative.Border   (Border)
+import           Graphics.Declarative.Graphic
+import           Graphics.Declarative.Physical2D
 
 import           Graphics.Declarative.Cairo.Shape as Shape
 import           Graphics.Declarative.Cairo.Form  as Form
 import           Graphics.Declarative.Cairo.TangoColors as Colors
 
-import Data.Vec2 as Vec2
+import qualified Data.Vec2 as Vec2
+import Data.Vec2 (Vec2)
 
 data DebuggedForm = Debugged { debugInfo :: Form, debugOriginal :: Form }
 
+instance Physical2D DebuggedForm where
+  move offset   = onDebug $ move offset
+  rotate angle  = onDebug $ rotate angle
+  scale factors = onDebug $ scale factors
+  atop          = onDebug2 atop
+  empty         = noDebug empty
+
 debuggedForm :: DebuggedForm -> Form
-debuggedForm (Debugged info original) = info `Bordered.atop` original
+debuggedForm (Debugged info original) = info `atop` original
 
 noDebug :: Form -> DebuggedForm
 noDebug = Debugged empty
 
 attachDebugInfo :: Form -> DebuggedForm -> DebuggedForm
-attachDebugInfo info = onDebugInfo (Bordered.atop info)
+attachDebugInfo info = onDebugInfo (atop info)
 
 createDebugInfo :: (Form -> Form) -> DebuggedForm -> DebuggedForm
 createDebugInfo createDebugInfo debugform
@@ -45,15 +55,12 @@ onDebug2 f (Debugged infoL originalL) (Debugged infoR originalR)
   = Debugged (f infoL infoR)
              (f originalL originalR)
 
-atop :: DebuggedForm -> DebuggedForm -> DebuggedForm
-atop = onDebug2 Bordered.atop
-
 boundingBoxShape :: Form -> Bordered Shape
 boundingBoxShape
   = Shape.rectangleFromBB . Border.getBoundingBox . Bordered.getBorder
 
 createBoundingBox :: LineStyle -> Form -> Form
-createBoundingBox linestyle form = origincircle `Bordered.atop` boundingbox
+createBoundingBox linestyle form = origincircle `atop` boundingbox
   where
     origincircle = outlined linestyle $ circle 2
     boundingbox  = outlined linestyle $ boundingBoxShape form
@@ -64,8 +71,8 @@ debugBoundingBox linestyle = createDebugInfo (createBoundingBox linestyle)
 -- use DebuggedForm instead of Form
 debugWithSize :: Form -> Form
 debugWithSize graphic
-  = Bordered.collapseBorder (Bordered.move (Vec2.add left bottom) debugText)
-    `Bordered.atop`
+  = Bordered.collapseBorder (move (Vec2.add left bottom) debugText)
+    `atop`
     debuggedForm (debugBoundingBox (solid (1,0,0)) (noDebug graphic))
   where
     debugText = text monoStyle $ unlines ["width : " ++ show w
@@ -81,8 +88,8 @@ tangentPath size tangentPoint
   = pathPoint (toLeft `Vec2.add` tangentPoint) `lineConnect` pathPoint (toRight `Vec2.add` tangentPoint)
   where
     normalVector = Vec2.normalize tangentPoint
-    toLeft  = Vec2.scale size . Vec2.rotateBy (degrees    90) $ normalVector
-    toRight = Vec2.scale size . Vec2.rotateBy (degrees (-90)) $ normalVector
+    toLeft  = Vec2.scale size . Vec2.rotateBy (Vec2.degrees    90) $ normalVector
+    toRight = Vec2.scale size . Vec2.rotateBy (Vec2.degrees (-90)) $ normalVector
 
 vectorPath :: Vec2 -> Path
 vectorPath vector = pathPoint (0,0) `lineConnect` pathPoint vector

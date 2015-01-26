@@ -9,6 +9,7 @@ import qualified Graphics.Rendering.Cairo as Cairo
 import           Graphics.Declarative.Graphic  as Graphic
 import           Graphics.Declarative.Bordered as Bordered
 import qualified Graphics.Declarative.Border   as Border
+import           Graphics.Declarative.Physical2D
 
 import           Graphics.Declarative.Cairo.Shape as Shape
 
@@ -59,7 +60,7 @@ withSave :: Cairo.Render () -> Cairo.Render ()
 withSave action = Cairo.save >> action >> Cairo.restore
 
 drawForm :: Form -> Cairo.Render ()
-drawForm = renderGraphic rotate scale move (flip (>>)) . unborder
+drawForm = renderGraphic rotate scale move (flip (>>)) (return ()) . unborder
   where
     rotate angle graphic = withSave $ do
       Cairo.rotate angle
@@ -72,14 +73,14 @@ drawForm = renderGraphic rotate scale move (flip (>>)) . unborder
       graphic
 
 filled :: RGB -> Bordered Shape -> Form
-filled (r, g, b) = Bordered.map fillShape
+filled (r, g, b) = Bordered.mapInner fillShape
   where fillShape shape = primitive $ withSave $ do
           Cairo.setSourceRGB r g b
           renderShape shape
           Cairo.fill
 
 outlined :: LineStyle -> Bordered Shape -> Form
-outlined style = Bordered.map outlineShape
+outlined style = Bordered.mapInner outlineShape
   where outlineShape shape = primitive $ withSave $ do
           applyLineStyle style
           renderShape shape
@@ -108,11 +109,8 @@ convertLineJoin Clipped = Cairo.LineJoinBevel
 convertLineJoin Smooth  = Cairo.LineJoinRound
 convertLineJoin Sharp   = Cairo.LineJoinMiter
 
-empty :: Form
-empty = gap 0 0
-
 gap :: Double -> Double -> Form
-gap w h = bordered (0.5,0.5) w h (Graphic.primitive $ return ())
+gap w h = bordered (0.5,0.5) w h empty
 
 text :: TextStyle -> String -> Form
 text style content = Bordered border $ Graphic.primitive $ withSave $ do
