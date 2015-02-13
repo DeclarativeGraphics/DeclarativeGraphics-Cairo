@@ -39,6 +39,9 @@ defaultLineStyle = LineStyle {
   dashOffset = 0
 }
 
+solid :: RGB -> LineStyle
+solid col = defaultLineStyle { color = col }
+
 data TextStyle = TextStyle {
   textColor  :: RGB,
   bold       :: Bool,
@@ -55,6 +58,9 @@ defaultTextStyle = TextStyle {
   fontSize   = 14,
   fontFamily = "Sans"
 }
+
+font :: String -> Double -> TextStyle
+font family size = defaultTextStyle { fontFamily = family, fontSize = size }
 
 withSave :: Cairo.Render () -> Cairo.Render ()
 withSave action = Cairo.save >> action >> Cairo.restore
@@ -85,9 +91,6 @@ outlined style = Bordered.mapInner outlineShape
           applyLineStyle style
           renderShape shape
           Cairo.stroke
-
-solid :: RGB -> LineStyle
-solid col = defaultLineStyle { color = col }
 
 applyLineStyle :: LineStyle -> Cairo.Render ()
 applyLineStyle style = do
