@@ -5,13 +5,16 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import           Graphics.Rendering.Pango hiding (Color, Font)
 import qualified Graphics.Rendering.Cairo as Cairo
+import qualified Graphics.Rendering.Cairo.Matrix as Cairo
 
 import           Graphics.Declarative.Graphic  as Graphic
 import           Graphics.Declarative.Bordered as Bordered
 import qualified Graphics.Declarative.Border   as Border
-import           Graphics.Declarative.Physical2D
+import           Graphics.Declarative.Classes
 
 import           Graphics.Declarative.Cairo.Shape as Shape
+
+import Linear
 
 type RGB = (Double, Double, Double)
 
@@ -66,17 +69,12 @@ withSave :: Cairo.Render () -> Cairo.Render ()
 withSave action = Cairo.save >> action >> Cairo.restore
 
 drawForm :: Form -> Cairo.Render ()
-drawForm = renderGraphic rotate scale move (flip (>>)) (return ()) . unborder
+drawForm = renderGraphic transform (flip (>>)) (return ()) . unborder
   where
-    rotate angle graphic = withSave $ do
-      Cairo.rotate angle
-      graphic
-    scale factors graphic = withSave $ do
-      uncurry Cairo.scale factors
-      graphic
-    move offset graphic = withSave $ do
-      uncurry Cairo.translate offset
-      graphic
+    transform (V3 (V3 m00 m01 tx) (V3 m10 m11 ty) _) graphic =
+      withSave $ do
+        Cairo.transform $ Cairo.Matrix m00 m10 m01 m11 tx ty
+        graphic
 
 filled :: RGB -> Bordered Shape -> Form
 filled (r, g, b) = Bordered.mapInner fillShape
@@ -120,7 +118,7 @@ text style content = Bordered border $ Graphic.primitive $ withSave $ do
                        Cairo.setSourceRGB r g b
                        showLayout pLayout
   where
-    border = Border.fromBoundingBox ((0, 0), (width, height))
+    border = Border.fromBoundingBox (V2 0 0, V2 width height)
     (r, g, b) = textColor style
 
     pLayout :: PangoLayout

@@ -1,5 +1,2 @@
-/dist
-/LICENSE
-/.cabal-sandbox
-/cabal.sandbox.config
-.*.sw*
+/.stack-work/
+/dist/

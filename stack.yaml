@@ -1,0 +1,6 @@
+flags: {}
+packages:
+- '.'
+- '../DeclarativeGraphics'
+extra-deps: []
+resolver: lts-7.9
