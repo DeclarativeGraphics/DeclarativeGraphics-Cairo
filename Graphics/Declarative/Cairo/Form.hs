@@ -10,7 +10,7 @@ import qualified Graphics.Rendering.Cairo.Matrix as Cairo
 import           Graphics.Declarative.Graphic  as Graphic
 import           Graphics.Declarative.Bordered as Bordered
 import qualified Graphics.Declarative.Border   as Border
-import           Graphics.Declarative.Classes
+import           Graphics.Declarative.Transforms
 
 import           Graphics.Declarative.Cairo.Shape as Shape
 
@@ -111,12 +111,13 @@ convertLineJoin Smooth  = Cairo.LineJoinRound
 convertLineJoin Sharp   = Cairo.LineJoinMiter
 
 gap :: Double -> Double -> Form
-gap w h = bordered (0.5,0.5) w h empty
+gap w h = bordered (0.5,0.5) w h mempty
 
 text :: TextStyle -> String -> Form
-text style content = Bordered border $ Graphic.primitive $ withSave $ do
-                       Cairo.setSourceRGB r g b
-                       showLayout pLayout
+text style content = 
+  Bordered border $ Graphic.primitive $ withSave $ do
+    Cairo.setSourceRGB r g b
+    showLayout pLayout
   where
     border = Border.fromBoundingBox (V2 0 0, V2 width height)
     (r, g, b) = textColor style
@@ -125,6 +126,7 @@ text style content = Bordered border $ Graphic.primitive $ withSave $ do
     pLayout = unsafePerformIO $ do
       pContext <- getContext =<< getFontDescription
       layoutText pContext content
+
     (PangoRectangle _ _ width height)
       = snd $ unsafePerformIO $ layoutGetExtents pLayout
 
@@ -138,6 +140,7 @@ text style content = Bordered border $ Graphic.primitive $ withSave $ do
       fontDescriptionSetSize desc $ fontSize style
       fontDescriptionSetFamily desc $ fontFamily style
       return desc
+
     getContext :: FontDescription -> IO PangoContext
     getContext fontDescription = do
       context <- cairoCreateContext Nothing
